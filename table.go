@@ -62,8 +62,8 @@ var tableTransliteration = map[System]map[rune]string{
 		'Ы': "Y", 'ы': "y",
 		'Ь': "", 'ь': "",
 		'Э': "E", 'э': "e",
-		'Ю': "Iu", 'ю': "iu",
-		'Я': "Ia", 'я': "ia",
+		'Ю': "Yu", 'ю': "yu",
+		'Я': "Ya", 'я': "ya",
 	},
 	DriversLicense: {
 		'А': "A", 'а': "a",
