@@ -28,10 +28,12 @@ func NewEncoder(w io.Writer, sys System) *Encoder {
 func (enc *Encoder) Encode(data []byte) error {
 	r := bytes.Runes(data)
 	l := len(r)
+
 	var (
 		prev, next rune
 		err        error
 	)
+
 	for i, v := range r {
 		if i+1 <= l {
 			next = r[i]
@@ -68,6 +70,7 @@ func (enc *Encoder) EncodeString(s string) error {
 // Marshal returns the translit encoding of data.
 func Marshal(data []byte, sys System) ([]byte, error) {
 	var b bytes.Buffer
+
 	if err := NewEncoder(&b, sys).Encode(data); err != nil {
 		return nil, err
 	}
