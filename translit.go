@@ -28,16 +28,19 @@ func NewEncoder(w io.Writer, sys System) *Encoder {
 func (enc *Encoder) Encode(data []byte) error {
 	r := bytes.Runes(data)
 	l := len(r)
-	var rPrev, rNext rune
-	for i, rCurr := range r {
+	var (
+		prev, next rune
+		err        error
+	)
+	for i, v := range r {
 		if i+1 <= l {
-			rNext = r[i]
+			next = r[i]
 		} else {
-			rNext = 0
+			next = 0
 		}
-		var err error
-		if s, ok := enc.tbl[rCurr]; ok {
-			if sFix, ok := fixRuleRune(rPrev, rCurr, rNext, enc.sys); ok {
+
+		if s, ok := enc.tbl[v]; ok {
+			if sFix, ok := fixRuleRune(prev, v, next, enc.sys); ok {
 				s = sFix
 			}
 			_, err = enc.WriteString(s)
@@ -45,13 +48,15 @@ func (enc *Encoder) Encode(data []byte) error {
 				return err
 			}
 		} else {
-			_, err = enc.WriteRune(rCurr)
+			_, err = enc.WriteRune(v)
 			if err != nil {
 				return err
 			}
 		}
-		rPrev = rCurr
+
+		prev = v
 	}
+
 	return enc.Flush()
 }
 
@@ -66,12 +71,14 @@ func Marshal(data []byte, sys System) ([]byte, error) {
 	if err := NewEncoder(&b, sys).Encode(data); err != nil {
 		return nil, err
 	}
+
 	return b.Bytes(), nil
 }
 
 // MarshalString is like Marshal but applies string in the input and output.
 func MarshalString(s string, sys System) (string, error) {
 	b, err := Marshal([]byte(s), sys)
+
 	return string(b), err
 }
 
@@ -79,6 +86,7 @@ func MarshalString(s string, sys System) (string, error) {
 func MarshalStringURL(s string, sys System) string {
 	reg := regexp.MustCompile("[^A-Za-z0-9 ]+")
 	s, _ = MarshalString(strings.Replace(s, "-", " ", -1), sys)
+
 	return strings.ToLower(strings.Join(strings.Fields(reg.ReplaceAllString(s, "")), "-"))
 }
 

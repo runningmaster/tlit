@@ -1,19 +1,21 @@
-package tlit
+package tlit_test
 
 import (
 	"testing"
+
+	"github.com/runningmaster/tlit"
 )
 
-var tranTest = map[System][]struct {
+var tranTest = map[tlit.System][]struct {
 	in   string
 	want string
 }{
-	Default: {
+	tlit.Default: {
 		{"Йух", "Yuh"},
 		{"Йух ® йух™", "Yuh ® yuh™"},
 		{"", ""},
 	},
-	UkrainianStd: {
+	tlit.UkrainianStd: {
 		{"Згорани", "Zghorany"},
 		{"Розгін", "Rozghin"},
 		{"Сява Сянтович", "Siava Siantovych"},
@@ -43,9 +45,21 @@ func AssertEquals(t *testing.T, got, want string) {
 }
 
 func TestMarshalString(t *testing.T) {
-	for sys := range tableTransliteration {
+	for _, sys := range []tlit.System{
+		tlit.Default,
+		tlit.DriversLicense,
+		tlit.GOST1971,
+		tlit.GOST2002B,
+		tlit.GOST2006,
+		tlit.Passport1997,
+		tlit.Passport2010,
+		tlit.Passport2013ICAO,
+		tlit.Telegram,
+		tlit.UkrainianStd,
+		tlit.UkrainianWeb,
+	} {
 		for _, tt := range tranTest[sys] {
-			got, err := MarshalString(tt.in, sys)
+			got, err := tlit.MarshalString(tt.in, sys)
 			if err != nil {
 				AssertEquals(t, err.Error(), tt.want)
 			}
@@ -56,16 +70,16 @@ func TestMarshalString(t *testing.T) {
 
 func TestMarshalStringURLru(t *testing.T) {
 	in, want := "Путин -® IC Хуйло™", "putin-ic-huylo"
-	AssertEquals(t, MarshalStringURLru(in), want)
+	AssertEquals(t, tlit.MarshalStringURLru(in), want)
 }
 
 func TestMarshalStringURLua(t *testing.T) {
 	in, want := "Путін -® IC Хуйло™", "putin-ic-huylo"
-	AssertEquals(t, MarshalStringURLua(in), want)
+	AssertEquals(t, tlit.MarshalStringURLua(in), want)
 }
 
 func BenchmarkMarshalString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, _ = MarshalString(tranTest[Default][0].in, Default)
+		_, _ = tlit.MarshalString(tranTest[tlit.Default][0].in, tlit.Default)
 	}
 }

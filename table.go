@@ -434,36 +434,36 @@ var tableVowels = map[rune]bool{
 
 // It changes rule of transliteration for current rule
 // in depends on system of transliteration and adjacent runes.
-func fixRuleRune(rPrev, rCurr, rNext rune, sys System) (string, bool) {
+func fixRuleRune(prev, v, next rune, sys System) (string, bool) {
 	var s string
 
 	if !(sys == DriversLicense || sys == GOST2002B || sys == Passport1997 || sys == UkrainianStd) {
 		return s, false
 	}
 
-	upper := unicode.IsUpper(rCurr)
-	rPrev, rCurr, rNext = unicode.ToLower(rPrev), unicode.ToLower(rCurr), unicode.ToLower(rNext)
+	upper := unicode.IsUpper(v)
+	prev, v, next = unicode.ToLower(prev), unicode.ToLower(v), unicode.ToLower(next)
 
 	switch sys {
 	case DriversLicense:
 		switch {
-		case rCurr == 'е':
-			if rPrev == 0 || tableVowels[rPrev] || rPrev == 'ъ' || rPrev == 'ь' {
+		case v == 'е':
+			if prev == 0 || tableVowels[prev] || prev == 'ъ' || prev == 'ь' {
 				s = "ye"
 			}
-		case rCurr == 'ё':
-			if rPrev == 0 || tableVowels[rPrev] || rPrev == 'ъ' || rPrev == 'ь' {
+		case v == 'ё':
+			if prev == 0 || tableVowels[prev] || prev == 'ъ' || prev == 'ь' {
 				s = "yo"
-			} else if !tableVowels[rPrev] && rPrev != 'ж' && rPrev != 'ч' && rPrev != 'ш' && rPrev != 'щ' {
+			} else if !tableVowels[prev] && prev != 'ж' && prev != 'ч' && prev != 'ш' && prev != 'щ' {
 				s = "ye"
 			}
-		case rCurr == 'и' && rPrev == 'ь':
+		case v == 'и' && prev == 'ь':
 			s = "yi"
 		}
 	case GOST2002B:
-		switch {
-		case rCurr == 'ц':
-			if s, ok := tableTransliteration[sys][rNext]; ok {
+		switch ok := false; {
+		case v == 'ц':
+			if s, ok = tableTransliteration[sys][next]; ok {
 				if r := unicode.ToLower([]rune(s)[0]); r == 'e' || r == 'i' || r == 'j' || r == 'y' {
 					s = "c"
 				}
@@ -471,22 +471,22 @@ func fixRuleRune(rPrev, rCurr, rNext rune, sys System) (string, bool) {
 		}
 	case Passport1997:
 		switch {
-		case rCurr == 'е' && rPrev == 'ь':
+		case v == 'е' && prev == 'ь':
 			s = "ye"
 		}
 	case UkrainianStd:
 		switch {
-		case rCurr == 'г' && rPrev == 'з':
+		case v == 'г' && prev == 'з':
 			s = "gh"
-		case rCurr == 'є' && rPrev == 0:
+		case v == 'є' && prev == 0:
 			s = "ye"
-		case rCurr == 'ї' && rPrev == 0:
+		case v == 'ї' && prev == 0:
 			s = "yi"
-		case rCurr == 'й' && rPrev == 0:
+		case v == 'й' && prev == 0:
 			s = "y"
-		case rCurr == 'ю' && rPrev == 0:
+		case v == 'ю' && prev == 0:
 			s = "iu"
-		case rCurr == 'я' && rPrev == 0:
+		case v == 'я' && prev == 0:
 			s = "ia"
 		}
 	}
