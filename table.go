@@ -1,6 +1,7 @@
 package tlit
 
 import (
+	"fmt"
 	"unicode"
 )
 
@@ -21,6 +22,28 @@ const (
 	UkrainianStd
 	UkrainianWeb
 )
+
+var systemNames = [...]string{
+	"Default",
+	"DriversLicense",
+	"GOST1971",
+	"GOST2002B",
+	"GOST2006",
+	"Passport1997",
+	"Passport2010",
+	"Passport2013ICAO",
+	"Telegram",
+	"UkrainianStd",
+	"UkrainianWeb",
+}
+
+func (s System) String() string {
+	if int(s) < len(systemNames) {
+		return systemNames[s]
+	}
+
+	return fmt.Sprintf("System(%d)", int(s))
+}
 
 // Table of systems of transliteration.
 //
@@ -430,14 +453,25 @@ var tableVowels = map[rune]bool{
 	'Э': true, 'э': true,
 	'Ю': true, 'ю': true,
 	'Я': true, 'я': true,
+	// Ukrainian vowels
+	'І': true, 'і': true,
+	'Є': true, 'є': true,
+	'Ї': true, 'ї': true,
 }
 
-// It changes rule of transliteration for current rule
-// in depends on system of transliteration and adjacent runes.
+// isWordBoundary reports whether prev represents the start of a word:
+// either the very beginning of the input (prev == 0) or any non-Cyrillic
+// character such as a space, punctuation mark, or digit.
+func isWordBoundary(prev rune) bool {
+	return prev == 0 || !unicode.In(prev, unicode.Cyrillic)
+}
+
+// fixRuleRune returns a context-dependent override for the transliteration of v,
+// taking into account the system and the adjacent runes prev and next.
 func fixRuleRune(prev, v, next rune, sys System) (string, bool) {
 	var s string
 
-	if !(sys == DriversLicense || sys == GOST2002B || sys == Passport1997 || sys == UkrainianStd) {
+	if sys != DriversLicense && sys != GOST2002B && sys != Passport1997 && sys != UkrainianStd {
 		return s, false
 	}
 
@@ -446,25 +480,27 @@ func fixRuleRune(prev, v, next rune, sys System) (string, bool) {
 
 	switch sys {
 	case DriversLicense:
-		switch {
-		case v == 'е':
-			if prev == 0 || tableVowels[prev] || prev == 'ъ' || prev == 'ь' {
+		switch v {
+		case 'е':
+			if isWordBoundary(prev) || tableVowels[prev] || prev == 'ъ' || prev == 'ь' {
 				s = "ye"
 			}
-		case v == 'ё':
-			if prev == 0 || tableVowels[prev] || prev == 'ъ' || prev == 'ь' {
+		case 'ё':
+			if isWordBoundary(prev) || tableVowels[prev] || prev == 'ъ' || prev == 'ь' {
 				s = "yo"
 			} else if !tableVowels[prev] && prev != 'ж' && prev != 'ч' && prev != 'ш' && prev != 'щ' {
 				s = "ye"
 			}
-		case v == 'и' && prev == 'ь':
-			s = "yi"
+		case 'и':
+			if prev == 'ь' {
+				s = "yi"
+			}
 		}
 	case GOST2002B:
-		switch ok := false; {
-		case v == 'ц':
-			if s, ok = tableTransliteration[sys][next]; ok {
-				if r := unicode.ToLower([]rune(s)[0]); r == 'e' || r == 'i' || r == 'j' || r == 'y' {
+		switch v {
+		case 'ц':
+			if trans, ok := tableTransliteration[sys][next]; ok && len(trans) > 0 {
+				if r := unicode.ToLower([]rune(trans)[0]); r == 'e' || r == 'i' || r == 'j' || r == 'y' {
 					s = "c"
 				}
 			}
@@ -478,21 +514,19 @@ func fixRuleRune(prev, v, next rune, sys System) (string, bool) {
 		switch {
 		case v == 'г' && prev == 'з':
 			s = "gh"
-		case v == 'є' && prev == 0:
+		case v == 'є' && isWordBoundary(prev):
 			s = "ye"
-		case v == 'ї' && prev == 0:
+		case v == 'ї' && isWordBoundary(prev):
 			s = "yi"
-		case v == 'й' && prev == 0:
+		case v == 'й' && isWordBoundary(prev):
 			s = "y"
-		case v == 'ю' && prev == 0:
-			s = "iu"
-		case v == 'я' && prev == 0:
-			s = "ia"
 		}
 	}
 
 	if len(s) > 0 && upper {
-		[]rune(s)[0] = unicode.ToUpper([]rune(s)[0])
+		r := []rune(s)
+		r[0] = unicode.ToUpper(r[0])
+		s = string(r)
 	}
 
 	return s, len(s) > 0
